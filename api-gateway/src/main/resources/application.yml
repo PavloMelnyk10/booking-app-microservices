@@ -1,0 +1,50 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/bookingapp
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/bookingapp
+            user-name-attribute: preferred_username
+        registration:
+          keycloak:
+            client-id: myclient
+            client-secret:
+            scope: openid
+  cloud:
+    gateway:
+      default-filters:
+        - TokenRelay
+      routes:
+        - id: account-service
+          uri: lb://account-service
+          predicates:
+            - Path=/api/account/**
+
+        - id: accommodation-service
+          uri: lb://accommodation-service
+          predicates:
+            - Path=/api/accommodation/**
+
+        - id: booking-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/booking/**
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payment/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
