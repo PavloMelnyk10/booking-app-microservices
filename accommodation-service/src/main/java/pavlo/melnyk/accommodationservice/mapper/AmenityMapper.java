@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import pavlo.melnyk.accommodationservice.config.MapperConfig;
 import pavlo.melnyk.accommodationservice.model.Amenity;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperConfig.class, componentModel = "spring")
 public interface AmenityMapper {
 
     default Amenity mapFromName(String name) {

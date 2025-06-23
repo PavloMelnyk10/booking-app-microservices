@@ -6,7 +6,7 @@ import pavlo.melnyk.paymentservice.config.MapperConfig;
 import pavlo.melnyk.paymentservice.dto.PaymentDto;
 import pavlo.melnyk.paymentservice.model.Payment;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperConfig.class, componentModel = "spring")
 public interface PaymentMapper {
     PaymentDto toDto(Payment payment);
 
