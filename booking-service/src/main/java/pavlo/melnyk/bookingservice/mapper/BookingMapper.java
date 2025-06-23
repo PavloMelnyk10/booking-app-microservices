@@ -7,7 +7,7 @@ import pavlo.melnyk.bookingservice.dto.booking.BookingDto;
 import pavlo.melnyk.bookingservice.dto.booking.CreateBookingRequestDto;
 import pavlo.melnyk.bookingservice.model.Booking;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperConfig.class, componentModel = "spring")
 public interface BookingMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)

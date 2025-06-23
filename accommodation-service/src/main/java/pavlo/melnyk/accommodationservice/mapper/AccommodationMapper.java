@@ -16,7 +16,7 @@ import pavlo.melnyk.accommodationservice.dto.accommodation.UpdateAccommodationRe
 import pavlo.melnyk.accommodationservice.model.Accommodation;
 import pavlo.melnyk.accommodationservice.model.Amenity;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperConfig.class, componentModel = "spring")
 public interface AccommodationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
