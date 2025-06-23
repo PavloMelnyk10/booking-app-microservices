@@ -8,7 +8,7 @@ import pavlo.melnyk.bookingservice.dto.AccommodationAvailabilityDto;
 
 @FeignClient(
         name = "accommodation-service",
-        url = "${accommodation.service.url",
+        url = "${accommodation.service.url}",
         path = "/api/accommodation",
         configuration = FeignConfig.class
 )
