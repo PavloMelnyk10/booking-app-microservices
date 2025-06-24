@@ -57,6 +57,6 @@ public class Booking {
     @Column(name = "has_payment", nullable = false)
     private boolean hasPayment = false;
 
-    @Column(name = "daily_rate", nullable = false)
-    private BigDecimal dailyRate;
+    @Column(name = "price", nullable = false)
+    private BigDecimal price;
 }

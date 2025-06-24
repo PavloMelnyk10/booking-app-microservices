@@ -1,6 +1,6 @@
 package pavlo.melnyk.accommodationservice.service.accommodation;
 
-import static pavlo.melnyk.accommodationservice.service.notification.MessageBuilder.buildAccommodationCreatedMessage;
+
 import static pavlo.melnyk.accommodationservice.service.notification.MessageBuilder.buildAccommodationDeletedMessage;
 import static pavlo.melnyk.accommodationservice.service.notification.MessageBuilder.buildAccommodationUpdatedMessage;
 
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationAvailabilityDto;
+
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationSummaryDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.CreateAccommodationRequestDto;
@@ -23,6 +23,7 @@ import pavlo.melnyk.accommodationservice.model.Amenity;
 import pavlo.melnyk.accommodationservice.repository.accommodation.AccommodationRepository;
 import pavlo.melnyk.accommodationservice.service.amenity.AmenityService;
 import pavlo.melnyk.accommodationservice.service.notification.KafkaNotificationProducer;
+import pavlo.melnyk.accommodationservice.service.notification.MessageBuilder;
 
 @Service
 @Transactional
@@ -43,7 +44,7 @@ public class AccommodationServiceImpl implements AccommodationService {
         accommodation.setAmenities(amenities);
 
         Accommodation savedAccommodation = accommodationRepository.save(accommodation);
-        sendNotification(buildAccommodationCreatedMessage(savedAccommodation));
+        sendNotification(MessageBuilder.buildAccommodationCreatedMessage(savedAccommodation));
 
         return accommodationMapper.toDto(savedAccommodation);
     }
@@ -73,11 +74,7 @@ public class AccommodationServiceImpl implements AccommodationService {
         return accommodationMapper.toDto(accommodation);
     }
 
-    @Override
-    public AccommodationAvailabilityDto findAvailabilityById(Long id) {
-        Accommodation accommodation = getAccommodationOrThrow(id);
-        return accommodationMapper.toAvailabilityDto(accommodation);
-    }
+
 
     @Override
     @Transactional
@@ -91,19 +88,28 @@ public class AccommodationServiceImpl implements AccommodationService {
     }
 
     private void validateAccommodationUniqueness(Accommodation accommodation) {
-        if (accommodationRepository.existsByNameAndLocation(
-                accommodation.getName(), accommodation.getLocation())) {
+        if (accommodationRepository.existsByNameAndAddress_CountryAndAddress_CityAndAddress_Street(
+                accommodation.getName(),
+                accommodation.getAddress().getCountry(),
+                accommodation.getAddress().getCity(),
+                accommodation.getAddress().getStreet())) {
             throw new DuplicateEntityException(
-                    "Accommodation with the same name and location already exists!");
+                    "Accommodation with the same name and address already exists!");
         }
     }
 
     private void validateAccommodationUniqueness(Long id,
                                                  UpdateAccommodationRequestDto requestDto) {
-        if (accommodationRepository.existsByNameAndLocationAndIdNot(
-                requestDto.getName(), requestDto.getLocation(), id)) {
-            throw new DuplicateEntityException(
-                    "Another accommodation with the same name and location already exists");
+        if (requestDto.getName() != null && requestDto.getAddress() != null) {
+            if (accommodationRepository.existsByNameAndAddress_CountryAndAddress_CityAndAddress_StreetAndIdNot(
+                    requestDto.getName(),
+                    requestDto.getAddress().getCountry(),
+                    requestDto.getAddress().getCity(),
+                    requestDto.getAddress().getStreet(),
+                    id)) {
+                throw new DuplicateEntityException(
+                        "Another accommodation with the same name and address already exists");
+            }
         }
     }
 

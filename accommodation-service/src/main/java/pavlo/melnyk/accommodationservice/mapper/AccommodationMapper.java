@@ -8,7 +8,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import pavlo.melnyk.accommodationservice.config.MapperConfig;
-import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationAvailabilityDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationSummaryDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.CreateAccommodationRequestDto;
@@ -16,7 +15,7 @@ import pavlo.melnyk.accommodationservice.dto.accommodation.UpdateAccommodationRe
 import pavlo.melnyk.accommodationservice.model.Accommodation;
 import pavlo.melnyk.accommodationservice.model.Amenity;
 
-@Mapper(config = MapperConfig.class, componentModel = "spring")
+@Mapper(config = MapperConfig.class, componentModel = "spring", uses = AddressMapper.class)
 public interface AccommodationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
@@ -30,8 +29,6 @@ public interface AccommodationMapper {
             expression = "java(mapAmenityNames(accommodation.getAmenities()))")
     AccommodationDto toDto(Accommodation accommodation);
 
-    AccommodationAvailabilityDto toAvailabilityDto(Accommodation accommodation);
-
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "amenities", ignore = true)
     @Mapping(target = "id", ignore = true)
@@ -39,15 +36,12 @@ public interface AccommodationMapper {
     void updateAccommodationFromDto(UpdateAccommodationRequestDto requestDto,
                                     @MappingTarget Accommodation accommodation);
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "accommodationType", source = "accommodationType")
-    @Mapping(target = "location", source = "location")
-    @Mapping(target = "size", source = "size")
-    @Mapping(target = "dailyRate", source = "dailyRate")
     AccommodationSummaryDto toSummaryDto(Accommodation accommodation);
 
     default Set<Amenity> mapAmenities(Set<String> amenities) {
+        if (amenities == null) {
+            return null;
+        }
         return amenities.stream()
                 .map(name -> {
                     Amenity amenity = new Amenity();
@@ -63,3 +57,4 @@ public interface AccommodationMapper {
                 .collect(Collectors.toSet());
     }
 }
+

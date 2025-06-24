@@ -1,6 +1,7 @@
 package pavlo.melnyk.accommodationservice.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -43,8 +44,8 @@ public class Accommodation {
     @Column(nullable = false)
     private AccommodationType accommodationType;
 
-    @Column(nullable = false)
-    private String location;
+    @Embedded
+    private Address address;
 
     @Column(nullable = false)
     private String size;
@@ -59,9 +60,8 @@ public class Accommodation {
     @Column(name = "daily_rate", nullable = false)
     private BigDecimal dailyRate;
 
-    @Column(nullable = false)
-    private Integer availability;
 
-    @Column(nullable = false)
-    private boolean isDeleted = false;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
 }

@@ -2,7 +2,7 @@ package pavlo.melnyk.accommodationservice.service.accommodation;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationAvailabilityDto;
+
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationSummaryDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.CreateAccommodationRequestDto;
@@ -15,7 +15,7 @@ public interface AccommodationService {
 
     AccommodationDto findById(Long id);
 
-    AccommodationAvailabilityDto findAvailabilityById(Long id);
+
 
     void deleteById(Long id);
 

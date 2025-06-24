@@ -4,7 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import pavlo.melnyk.bookingservice.config.FeignConfig;
-import pavlo.melnyk.bookingservice.dto.AccommodationAvailabilityDto;
+import pavlo.melnyk.bookingservice.dto.AccommodationDto;
 
 @FeignClient(
         name = "accommodation-service",
@@ -13,7 +13,7 @@ import pavlo.melnyk.bookingservice.dto.AccommodationAvailabilityDto;
         configuration = FeignConfig.class
 )
 public interface AccommodationClient {
-    @GetMapping("/availability/{id}")
-    AccommodationAvailabilityDto findById(
+    @GetMapping("/{id}")
+    AccommodationDto findById(
             @PathVariable("id") Long id);
 }

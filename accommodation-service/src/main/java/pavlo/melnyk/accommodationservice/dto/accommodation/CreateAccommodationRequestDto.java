@@ -1,5 +1,7 @@
 package pavlo.melnyk.accommodationservice.dto.accommodation;
 
+import jakarta.validation.Valid;
+import pavlo.melnyk.accommodationservice.dto.AddressDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -25,13 +27,9 @@ public class CreateAccommodationRequestDto {
                     + "Allowed values: HOUSE, APARTMENT, CONDO, VACATION HOME")
     private String accommodationType;
 
-    @NotNull(message = "Availability is required")
-    @Positive(message = "Availability must be greater than zero")
-    private Integer availability;
-
-    @NotBlank(message = "Location is required")
-    @Size(min = 10, max = 200, message = "The location must be between 10 and 200 characters")
-    private String location;
+    @NotNull(message = "Address is required")
+    @Valid
+    private AddressDto address;
 
     @NotBlank(message = "Size is required")
     @Size(min = 4, max = 50, message = "Size  must be between 4 and 50 characters")

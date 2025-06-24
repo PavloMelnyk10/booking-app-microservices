@@ -54,7 +54,7 @@ public class PaymentValidationService {
                     "Invalid booking dates: check-out must be after check-in");
         }
 
-        return booking.getDailyRate().multiply(BigDecimal.valueOf(days));
+        return booking.getPrice().multiply(BigDecimal.valueOf(days));
     }
 
     private void validateBookingDates(final BookingDto booking) {
@@ -64,7 +64,7 @@ public class PaymentValidationService {
     }
 
     private void validateDailyRate(final BookingDto booking) {
-        if (booking.getDailyRate() == null) {
+        if (booking.getPrice() == null) {
             throw new IllegalArgumentException("Accommodation daily rate is not set");
         }
     }
