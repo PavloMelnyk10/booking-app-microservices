@@ -25,6 +25,15 @@ public class Account {
     @Column(name = "keycloak_user_id", nullable = false, unique = true)
     private String keycloakUserId;
 
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
     @Column(name = "completed_bookings", nullable = false)
     private int completedBookings = 0;
 

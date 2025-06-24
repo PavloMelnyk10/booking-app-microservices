@@ -13,16 +13,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import pavlo.melnyk.accountservice.model.Account;
-import pavlo.melnyk.accountservice.repository.AccountRepository;
 import pavlo.melnyk.accountservice.security.CustomAuthenticationEntryPoint;
+import pavlo.melnyk.accountservice.service.AccountService;
 
 @EnableWebSecurity
 @EnableMethodSecurity
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final AccountRepository accountRepository;
+
+    private final AccountService accountService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,15 +45,7 @@ public class SecurityConfig {
             var authorities = jwtGrantedAuthoritiesConverter.convert(jwt);
             var roles = jwt.getClaimAsStringList("spring_sec_roles");
 
-            String keycloakUserId = jwt.getClaimAsString("sub");
-
-            boolean exists = accountRepository.existsByKeycloakUserId(keycloakUserId);
-
-            if (!exists) {
-                Account newAccount = new Account();
-                newAccount.setKeycloakUserId(keycloakUserId);
-                accountRepository.save(newAccount);
-            }
+            accountService.synchronizeAccount(jwt);
 
             return Stream.concat(authorities.stream(),
                             roles.stream()
