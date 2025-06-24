@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationAvailabilityDto;
+
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationSummaryDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.CreateAccommodationRequestDto;
@@ -44,7 +44,7 @@ public class AccommodationController {
     @GetMapping("/{id}")
     @Operation(summary = "Find accommodation by ID",
             description = "Retrieve details of a specific accommodation by ID")
-    public AccommodationDto getAccommodationById(@PathVariable Long id) {
+        public AccommodationDto getAccommodationById(@PathVariable("id") Long id) {
         return accommodationService.findById(id);
     }
 
@@ -63,7 +63,7 @@ public class AccommodationController {
     @Operation(summary = "Update accommodation details",
             description = "Update details of an existing accommodation by ID")
     public AccommodationDto updateAccommodationDetails(
-            @PathVariable Long id, @RequestBody @Valid UpdateAccommodationRequestDto requestDto) {
+            @PathVariable("id") Long id, @RequestBody @Valid UpdateAccommodationRequestDto requestDto) {
         return accommodationService.update(id, requestDto);
     }
 
@@ -72,15 +72,9 @@ public class AccommodationController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Delete accommodation",
             description = "Mark an accommodation as deleted in the system by ID")
-    public void deleteAccommodationById(@PathVariable Long id) {
+    public void deleteAccommodationById(@PathVariable("id") Long id) {
         accommodationService.deleteById(id);
     }
 
-    @GetMapping(value = "/availability/{id}", produces = "application/json")
-    @Operation(summary = "Get accommodation availability",
-            description = "Retrieve availability and basic info for a specific accommodation")
-    public ResponseEntity<AccommodationAvailabilityDto>
-            getAccommodationAvailability(@PathVariable Long id) {
-        return ResponseEntity.ok(accommodationService.findAvailabilityById(id));
-    }
+
 }

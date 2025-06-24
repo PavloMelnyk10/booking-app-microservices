@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import pavlo.melnyk.paymentservice.model.Payment;
 import pavlo.melnyk.paymentservice.model.PaymentStatus;
 
@@ -16,13 +17,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     WHERE p.status = 'PENDING'
       AND p.createdAt < :cutoffTime
             """)
-    List<Payment> findPendingBefore(LocalDateTime cutoffTime);
+    List<Payment> findPendingBefore(@Param("cutoffTime") LocalDateTime cutoffTime);
 
     Page<Payment> findAllByUserId(Long id, Pageable pageable);
 
     Optional<Payment> findBySessionId(String sessionId);
 
-    boolean existsByBookingIdAndStatus(Long id, PaymentStatus paymentStatus);
+    boolean existsByBookingIdAndStatus(Long bookingId, PaymentStatus paymentStatus);
 
     Optional<Payment> findByBookingId(Long id);
 }

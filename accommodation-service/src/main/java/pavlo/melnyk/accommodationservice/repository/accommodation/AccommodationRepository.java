@@ -9,7 +9,7 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
     @EntityGraph(attributePaths = "amenities")
     Optional<Accommodation> findWithAmenitiesById(Long id);
 
-    boolean existsByNameAndLocation(String name, String location);
+    boolean existsByNameAndAddress_CountryAndAddress_CityAndAddress_Street(String name, String country, String city, String street);
 
-    boolean existsByNameAndLocationAndIdNot(String name, String location, Long id);
+    boolean existsByNameAndAddress_CountryAndAddress_CityAndAddress_StreetAndIdNot(String name, String country, String city, String street, Long id);
 }

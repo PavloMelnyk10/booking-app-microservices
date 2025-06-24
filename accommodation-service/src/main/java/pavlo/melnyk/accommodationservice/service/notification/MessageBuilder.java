@@ -2,6 +2,7 @@ package pavlo.melnyk.accommodationservice.service.notification;
 
 import java.util.stream.Collectors;
 import pavlo.melnyk.accommodationservice.model.Accommodation;
+import pavlo.melnyk.accommodationservice.model.Address;
 import pavlo.melnyk.accommodationservice.model.Amenity;
 
 public final class MessageBuilder {
@@ -25,7 +26,7 @@ public final class MessageBuilder {
                         """,
                 accommodation.getId(),
                 accommodation.getName(),
-                accommodation.getLocation(),
+                formatAddress(accommodation.getAddress()),
                 amenities.isEmpty() ? "No amenities listed" : amenities,
                 accommodation.getDailyRate()
         );
@@ -54,8 +55,19 @@ public final class MessageBuilder {
                         """,
                 accommodation.getId(),
                 accommodation.getName(),
-                accommodation.getLocation(),
+                formatAddress(accommodation.getAddress()),
                 accommodation.getDailyRate()
         );
+    }
+
+    private static String formatAddress(Address address) {
+        if (address == null) {
+            return "No address provided";
+        }
+        return String.format("%s, %s, %s, %s",
+                address.getStreet(),
+                address.getCity(),
+                address.getCountry(),
+                address.getZipCode());
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import pavlo.melnyk.bookingservice.model.Booking;
 import pavlo.melnyk.bookingservice.model.BookingStatus;
 
@@ -17,9 +18,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "AND b.checkInDate < :checkOutDate "
             + "AND b.checkOutDate > :checkInDate")
     long countOverlappingBookings(
-            Long accommodationId,
-            LocalDate checkInDate,
-            LocalDate checkOutDate);
+            @Param("accommodationId") Long accommodationId,
+            @Param("checkInDate") LocalDate checkInDate,
+            @Param("checkOutDate") LocalDate checkOutDate);
 
     @Query("SELECT COUNT(b) FROM Booking b "
             + "WHERE b.accommodationId = :accommodationId "
@@ -27,10 +28,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "AND b.id != :bookingId "
             + "AND b.checkInDate < :checkOutDate "
             + "AND b.checkOutDate > :checkInDate")
-    long countOverlappingBookings(Long accommodationId,
-                                  Long bookingId,
-                                  LocalDate checkInDate,
-                                  LocalDate checkOutDate);
+    long countOverlappingBookings(@Param("accommodationId") Long accommodationId,
+                                  @Param("bookingId") Long bookingId,
+                                  @Param("checkInDate") LocalDate checkInDate,
+                                  @Param("checkOutDate") LocalDate checkOutDate);
 
     Page<Booking> findAllByUserId(Long userId, Pageable pageable);
 

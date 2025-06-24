@@ -18,7 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import pavlo.melnyk.bookingservice.client.AccommodationClient;
 import pavlo.melnyk.bookingservice.client.AccountClient;
-import pavlo.melnyk.bookingservice.dto.AccommodationAvailabilityDto;
+import pavlo.melnyk.bookingservice.dto.AccommodationDto;
 import pavlo.melnyk.bookingservice.dto.UserDto;
 import pavlo.melnyk.bookingservice.dto.booking.BookingDto;
 import pavlo.melnyk.bookingservice.dto.booking.CreateBookingRequestDto;
@@ -49,11 +49,11 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto createBooking(CreateBookingRequestDto requestDto) {
         UserDto currentUser = accountClient.getCurrentUser();
 
-        AccommodationAvailabilityDto accommodation
+        AccommodationDto accommodation
                 = getAccommodationOrThrow(requestDto.getAccommodationId());
 
-        checkAvailability(
-                accommodation, requestDto.getCheckInDate(),
+        checkBookingOverlap(
+                accommodation.getId(), requestDto.getCheckInDate(),
                 requestDto.getCheckOutDate(), null);
 
         Booking booking = createNewBooking(requestDto, currentUser, accommodation);
@@ -92,30 +92,28 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto updateBooking(final Long bookingId,
                                     final UpdateBookingRequestDto requestDto) {
-        Booking booking = getBookingOrThrow(bookingId);
         validateBookingOwnership(bookingId);
-
+        Booking booking = getBookingOrThrow(bookingId);
         validateBookingStatusForUpdate(booking);
 
-        AccommodationAvailabilityDto accommodation
-                = accommodationClient.findById(booking.getAccommodationId());
-        checkAvailability(
-                accommodation, requestDto.getCheckInDate(),
-                requestDto.getCheckOutDate(), bookingId);
+        checkBookingOverlap(booking.getAccommodationId(),
+                requestDto.getCheckInDate(),
+                requestDto.getCheckOutDate(),
+                bookingId);
 
         updateBookingDetails(booking, requestDto);
+        Booking updatedBooking = bookingRepository.save(booking);
 
         notificationProducer.sendNotification(
-                "booking_topic", buildBookingUpdatedMessage(booking, requestDto));
+                "booking_topic", buildBookingUpdatedMessage(updatedBooking, requestDto));
 
-        Booking updatedBooking = bookingRepository.save(booking);
         return bookingMapper.toDto(updatedBooking);
     }
 
     @Override
     public void cancelBookingById(final Long bookingId) {
-        Booking booking = getBookingOrThrow(bookingId);
         validateBookingOwnership(bookingId);
+        Booking booking = getBookingOrThrow(bookingId);
 
         validateBookingStatusForCancellation(booking);
 
@@ -135,30 +133,41 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void changeStatus(Long bookingId, BookingStatus status) {
-        Booking booking = getBookingOrThrow(bookingId);
         validateBookingOwnership(bookingId);
+        Booking booking = getBookingOrThrow(bookingId);
         booking.setStatus(status);
         bookingRepository.save(booking);
     }
 
-    private AccommodationAvailabilityDto getAccommodationOrThrow(Long accommodationId) {
+    private AccommodationDto getAccommodationOrThrow(Long accommodationId) {
         try {
             return accommodationClient.findById(accommodationId);
-        } catch (AccommodationNotFoundException e) {
+        } catch (Exception e) {
             throw new AccommodationNotFoundException(
-                    "Accommodation with id " + accommodationId + " not found");
+                    "Accommodation with id " + accommodationId + " not found"
+            );
         }
     }
 
     private Booking createNewBooking(CreateBookingRequestDto requestDto,
                                      UserDto currentUser,
-                                     AccommodationAvailabilityDto accommodation) {
+                                     AccommodationDto accommodation) {
         Booking booking = bookingMapper.toModel(requestDto);
         booking.setUserId(currentUser.getId());
         booking.setAccommodationId(accommodation.getId());
         booking.setStatus(BookingStatus.PENDING);
-        booking.setDailyRate(accommodation.getDailyRate()
-                .subtract(getDiscount(currentUser, accommodation.getDailyRate())));
+
+        long completedBookings = currentUser.getCompletedBookings();
+
+        DiscountStrategy discountStrategy = discountStrategyFactory.getStrategy(
+                (int) completedBookings
+        );
+
+        BigDecimal originalPrice = accommodation.getDailyRate();
+        BigDecimal discount = discountStrategy.calculateDiscount(
+                originalPrice, (int) completedBookings
+        );
+        booking.setPrice(originalPrice.subtract(discount));
         return booking;
     }
 
@@ -204,17 +213,17 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void checkAvailability(final AccommodationAvailabilityDto accommodation,
+    private void checkBookingOverlap(final Long accommodationId,
                                    final LocalDate checkIn,
                                    final LocalDate checkOut,
                                    final Long excludeBookingId) {
         long overlappingCount = (excludeBookingId == null)
                 ? bookingRepository.countOverlappingBookings(
-                        accommodation.getId(), checkIn, checkOut)
+                accommodationId, checkIn, checkOut)
                 : bookingRepository.countOverlappingBookings(
-                        accommodation.getId(), excludeBookingId, checkIn, checkOut);
+                accommodationId, excludeBookingId, checkIn, checkOut);
 
-        if (overlappingCount >= accommodation.getAvailability()) {
+        if (overlappingCount >= 1) {
             throw new AccommodationFullyBookedException(
                     "Accommodation is fully booked for the given dates");
         }
@@ -243,11 +252,5 @@ public class BookingServiceImpl implements BookingService {
     private boolean currentUserHasAdminRole(Jwt jwt) {
         var roles = jwt.getClaimAsStringList("spring_sec_roles");
         return roles != null && roles.contains("ROLE_ADMIN");
-    }
-
-    private BigDecimal getDiscount(UserDto user, BigDecimal basePrice) {
-        DiscountStrategy strategy
-                = discountStrategyFactory.getStrategy(user.getCompletedBookings());
-        return strategy.calculateDiscount(basePrice, user.getCompletedBookings());
     }
 }

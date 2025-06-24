@@ -12,5 +12,5 @@ public class BookingDto {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private BookingStatus status;
-    private BigDecimal dailyRate;
+    private BigDecimal price;
 }

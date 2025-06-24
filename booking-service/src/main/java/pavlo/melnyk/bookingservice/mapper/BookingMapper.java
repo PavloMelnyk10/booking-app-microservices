@@ -14,7 +14,7 @@ public interface BookingMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "dailyRate", ignore = true)
+    @Mapping(target = "price", ignore = true)
     @Mapping(target = "hasPayment", ignore = true)
     Booking toModel(CreateBookingRequestDto requestDto);
 

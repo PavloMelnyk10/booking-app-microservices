@@ -64,7 +64,7 @@ public class BookingController {
     @PreAuthorize("hasRole('ROLE_USER')")
     @Operation(summary = "Get booking details",
             description = "Provides detailed information about a specific booking")
-    public BookingDto getBookingById(@PathVariable Long id) {
+    public BookingDto getBookingById(@PathVariable("id") Long id) {
         return bookingService.findBookingById(id);
     }
 
@@ -72,7 +72,7 @@ public class BookingController {
     @PreAuthorize("hasRole('ROLE_USER')")
     @Operation(summary = "Update booking details",
             description = "Allows users to update details of an existing booking")
-    public BookingDto updateBooking(@PathVariable Long id,
+    public BookingDto updateBooking(@PathVariable("id") Long id,
                                     @RequestBody @Valid UpdateBookingRequestDto requestDto) {
         return bookingService.updateBooking(id, requestDto);
     }
@@ -82,13 +82,14 @@ public class BookingController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Cancel a booking",
             description = "Allows users to cancel an existing booking")
-    public void cancelBooking(@PathVariable Long id) {
+    public void cancelBooking(@PathVariable("id") Long id) {
         bookingService.cancelBookingById(id);
     }
 
     @PostMapping("/change-booking-status")
     public ResponseEntity<Void> completeBooking(
-            @RequestParam Long bookingId, @RequestParam BookingStatus status) {
+            @RequestParam("bookingId") Long bookingId,
+            @RequestParam("status") BookingStatus status) {
         bookingService.changeStatus(bookingId, status);
         return ResponseEntity.ok().build();
     }

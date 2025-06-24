@@ -1,8 +1,10 @@
 package pavlo.melnyk.accommodationservice.dto.accommodation;
 
+import jakarta.validation.Valid;
+import pavlo.melnyk.accommodationservice.dto.AddressDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.Set;
@@ -23,11 +25,8 @@ public class UpdateAccommodationRequestDto {
                     + "Allowed values: HOUSE, APARTMENT, CONDO, VACATION HOME")
     private String accommodationType;
 
-    @PositiveOrZero(message = "Availability must be zero or a positive number")
-    private Integer availability;
-
-    @Size(min = 10, max = 200, message = "The location must be between 10 and 200 characters")
-    private String location;
+    @Valid
+    private AddressDto address;
 
     @Size(min = 4, max = 50, message = "Size  must be between 4 and 50 characters")
     private String size;
