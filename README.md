@@ -10,6 +10,11 @@ Project is a migration of my original monolithic project, [Accommodation booking
 - **Maintainability**: Smaller, modular services are easier to manage, develop, and deploy independently.
 - **Flexibility**: Different technologies and frameworks can be used for different services, optimizing for the best tools for each job.
 
+### Is this a good pet project for a junior?
+- Так. Архітектура охоплює реєстрацію/дискавері, gateway, синхронні та асинхронні виклики, безпеку й платежі — це дає широкий зріз практики.
+- Складність середня: знадобиться час на розуміння взаємодії сервісів і запуску docker-compose (config server → eureka → інші сервіси).
+- Рекомендую почати з одного сервісу (наприклад, booking або accommodation), підняти його локально, потім поступово підключати gateway та інтеграції. Писати невеликі тести на мапери/сервіси допоможе закріпити матеріал.
+
 ## Architecture Overview
 The application is divided into several independent microservices:
 
