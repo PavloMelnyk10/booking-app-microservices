@@ -13,8 +13,8 @@ import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import pavlo.melnyk.bookingservice.client.AccommodationClient;
 import pavlo.melnyk.bookingservice.client.AccountClient;
@@ -49,8 +49,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto createBooking(CreateBookingRequestDto requestDto) {
         UserDto currentUser = accountClient.getCurrentUser();
 
-        AccommodationDto accommodation
-                = getAccommodationOrThrow(requestDto.getAccommodationId());
+        AccommodationDto accommodation = getAccommodationOrThrow(requestDto.getAccommodationId());
 
         checkBookingOverlap(
                 accommodation.getId(), requestDto.getCheckInDate(),
@@ -76,8 +75,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Page<BookingDto> findByUserIdAndStatus(final Long userId,
-                                                  final BookingStatus status,
-                                                  final Pageable pageable) {
+            final BookingStatus status,
+            final Pageable pageable) {
         return bookingRepository.findAllByUserIdAndStatus(
                 userId, status, pageable).map(bookingMapper::toDto);
     }
@@ -91,7 +90,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto updateBooking(final Long bookingId,
-                                    final UpdateBookingRequestDto requestDto) {
+            final UpdateBookingRequestDto requestDto) {
         validateBookingOwnership(bookingId);
         Booking booking = getBookingOrThrow(bookingId);
         validateBookingStatusForUpdate(booking);
@@ -144,14 +143,13 @@ public class BookingServiceImpl implements BookingService {
             return accommodationClient.findById(accommodationId);
         } catch (Exception e) {
             throw new AccommodationNotFoundException(
-                    "Accommodation with id " + accommodationId + " not found"
-            );
+                    "Accommodation with id " + accommodationId + " not found");
         }
     }
 
     private Booking createNewBooking(CreateBookingRequestDto requestDto,
-                                     UserDto currentUser,
-                                     AccommodationDto accommodation) {
+            UserDto currentUser,
+            AccommodationDto accommodation) {
         Booking booking = bookingMapper.toModel(requestDto);
         booking.setUserId(currentUser.getId());
         booking.setAccommodationId(accommodation.getId());
@@ -160,13 +158,11 @@ public class BookingServiceImpl implements BookingService {
         long completedBookings = currentUser.getCompletedBookings();
 
         DiscountStrategy discountStrategy = discountStrategyFactory.getStrategy(
-                (int) completedBookings
-        );
+                (int) completedBookings);
 
         BigDecimal originalPrice = accommodation.getDailyRate();
         BigDecimal discount = discountStrategy.calculateDiscount(
-                originalPrice, (int) completedBookings
-        );
+                originalPrice, (int) completedBookings);
         booking.setPrice(originalPrice.subtract(discount));
         return booking;
     }
@@ -214,14 +210,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void checkBookingOverlap(final Long accommodationId,
-                                   final LocalDate checkIn,
-                                   final LocalDate checkOut,
-                                   final Long excludeBookingId) {
+            final LocalDate checkIn,
+            final LocalDate checkOut,
+            final Long excludeBookingId) {
         long overlappingCount = (excludeBookingId == null)
                 ? bookingRepository.countOverlappingBookings(
-                accommodationId, checkIn, checkOut)
+                        accommodationId, checkIn, checkOut)
                 : bookingRepository.countOverlappingBookings(
-                accommodationId, excludeBookingId, checkIn, checkOut);
+                        accommodationId, excludeBookingId, checkIn, checkOut);
 
         if (overlappingCount >= 1) {
             throw new AccommodationFullyBookedException(
@@ -230,17 +226,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private Booking getBookingOrThrow(final Long bookingId) {
-        return bookingRepository.findById(bookingId).orElseThrow(()
-                -> new BookingNotFoundException("Booking with ID " + bookingId + " not found"));
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(
+                        "Booking with ID " + bookingId + " not found"));
     }
 
     private void validateBookingOwnership(final Long bookingId) {
         UserDto currentUser = accountClient.getCurrentUser();
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(()
-                -> new BookingNotFoundException("Booking with ID " + bookingId + " not found"));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException(
+                        "Booking with ID " + bookingId + " not found"));
 
-        if (currentUserHasAdminRole((Jwt) SecurityContextHolder
-                .getContext().getAuthentication().getPrincipal())) {
+        if (currentUserHasAdminRole()) {
             return;
         }
 
@@ -249,8 +246,12 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private boolean currentUserHasAdminRole(Jwt jwt) {
-        var roles = jwt.getClaimAsStringList("spring_sec_roles");
-        return roles != null && roles.contains("ROLE_ADMIN");
+    private boolean currentUserHasAdminRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

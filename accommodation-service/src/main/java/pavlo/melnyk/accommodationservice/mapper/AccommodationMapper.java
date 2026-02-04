@@ -7,7 +7,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
-import pavlo.melnyk.accommodationservice.config.MapperConfig;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.AccommodationSummaryDto;
 import pavlo.melnyk.accommodationservice.dto.accommodation.CreateAccommodationRequestDto;
@@ -15,7 +14,7 @@ import pavlo.melnyk.accommodationservice.dto.accommodation.UpdateAccommodationRe
 import pavlo.melnyk.accommodationservice.model.Accommodation;
 import pavlo.melnyk.accommodationservice.model.Amenity;
 
-@Mapper(config = MapperConfig.class, componentModel = "spring", uses = AddressMapper.class)
+@Mapper(componentModel = "spring", uses = AddressMapper.class)
 public interface AccommodationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)

@@ -12,6 +12,6 @@ public class UserDto {
     private String address;
     private String phoneNumber;
     private String gender;
-    private LocalDate birtDate;
+    private LocalDate birthDate;
     private int completedBookings;
 }

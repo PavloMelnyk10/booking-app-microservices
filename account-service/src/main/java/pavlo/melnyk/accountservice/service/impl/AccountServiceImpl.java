@@ -1,13 +1,13 @@
 package pavlo.melnyk.accountservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pavlo.melnyk.accountservice.dto.AccountDto;
 import pavlo.melnyk.accountservice.mapper.AccountMapper;
 import pavlo.melnyk.accountservice.model.Account;
 import pavlo.melnyk.accountservice.repository.AccountRepository;
+import pavlo.melnyk.accountservice.security.InternalUserPrincipal;
 import pavlo.melnyk.accountservice.service.AccountService;
 
 @Service
@@ -18,22 +18,31 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void synchronizeAccount(Jwt jwt) {
-        String keycloakUserId = jwt.getClaimAsString("sub");
+    public void synchronizeAccount(InternalUserPrincipal principal) {
+        String keycloakUserId = principal.getUserId();
+        String email = principal.getEmail();
+
         Account account = accountRepository.findByKeycloakUserId(keycloakUserId)
+                .or(() -> accountRepository.findByEmail(email))
                 .orElseGet(() -> new Account().setKeycloakUserId(keycloakUserId));
 
-        account.setEmail(jwt.getClaimAsString("email"));
-        account.setFirstName(jwt.getClaimAsString("given_name"));
-        account.setLastName(jwt.getClaimAsString("family_name"));
+        // Ensure Keycloak ID is set (in case we found by email)
+        if (account.getKeycloakUserId() == null) {
+            account.setKeycloakUserId(keycloakUserId);
+        }
+
+        account.setEmail(principal.getEmail());
+        account.setFirstName(principal.getFirstName());
+        account.setLastName(principal.getLastName());
 
         accountRepository.save(account);
     }
 
     @Override
-    public AccountDto getCurrentAccount(Jwt jwt) {
-        Account account = accountRepository
-                .findByKeycloakUserId(jwt.getClaimAsString("sub")).orElseThrow();
+    public AccountDto getCurrentAccount(InternalUserPrincipal principal) {
+        Account account = accountRepository.findByKeycloakUserId(principal.getUserId())
+                .or(() -> accountRepository.findByEmail(principal.getEmail()))
+                .orElseThrow(() -> new RuntimeException("Account not found for user: " + principal.getUserId()));
 
         return accountMapper.toDto(account);
     }

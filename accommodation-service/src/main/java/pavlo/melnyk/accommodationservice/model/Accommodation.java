@@ -60,8 +60,6 @@ public class Accommodation {
     @Column(name = "daily_rate", nullable = false)
     private BigDecimal dailyRate;
 
-
-
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 }

@@ -1,12 +1,11 @@
 package pavlo.melnyk.accountservice.service;
 
-import org.springframework.security.oauth2.jwt.Jwt;
 import pavlo.melnyk.accountservice.dto.AccountDto;
+import pavlo.melnyk.accountservice.security.InternalUserPrincipal;
 
 public interface AccountService {
 
-    void synchronizeAccount(Jwt jwt);
+    void synchronizeAccount(InternalUserPrincipal principal);
 
-    AccountDto getCurrentAccount(Jwt jwt);
+    AccountDto getCurrentAccount(InternalUserPrincipal principal);
 }
-

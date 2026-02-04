@@ -5,9 +5,9 @@ spring:
   application:
     name: accommodation-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/booking_app_ms
-    username: postgres
-    password: 123456
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/accommodationsdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,20 +15,53 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/bookingapp
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8071/}"
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: "Accommodations"
+    description: "Booking Platform Accommodations Service"
+    version: "1.0.0"
+
 eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka/}
+
+logging:
+  level:
+    com:
+      pavlomelnyk:
+        accounts: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pavlo.melnyk.paymentservice.service.payment.PaymentService;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class StripeWebhookController {
 

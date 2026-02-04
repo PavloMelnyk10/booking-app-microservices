@@ -74,8 +74,6 @@ public class AccommodationServiceImpl implements AccommodationService {
         return accommodationMapper.toDto(accommodation);
     }
 
-
-
     @Override
     @Transactional
     public void deleteById(final Long id) {

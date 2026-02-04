@@ -4,47 +4,107 @@ server:
 spring:
   application:
     name: api-gateway
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8071/}"
+  
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/bookingapp
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:https://localhost:7080/realms/booking-platform}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://localhost:7080/realms/booking-platform/protocol/openid-connect/certs}
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/bookingapp
+            authorization-uri: ${KEYCLOAK_AUTH_URI:https://localhost:7080/realms/booking-platform/protocol/openid-connect/auth}
+            token-uri: ${KEYCLOAK_TOKEN_URI:https://localhost:7080/realms/booking-platform/protocol/openid-connect/token}
+            user-info-uri: ${KEYCLOAK_USER_INFO_URI:https://localhost:7080/realms/booking-platform/protocol/openid-connect/userinfo}
+            jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://localhost:7080/realms/booking-platform/protocol/openid-connect/certs}
             user-name-attribute: preferred_username
         registration:
           keycloak:
-            client-id: myclient
-            client-secret:
+            provider: keycloak
+            client-id: booking-platform-client
+            client-secret: COsjqIJAg8FEqNmagcOBPhTKiaRYHkbe
+            authorization-grant-type: authorization_code
             scope: openid
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
   cloud:
     gateway:
-      default-filters:
-        - TokenRelay
-      routes:
-        - id: account-service
-          uri: lb://account-service
-          predicates:
-            - Path=/api/account/**
+      server:
+        webflux:
+          default-filters:
+            - TokenRelay
+          routes:
+            - id: account-service
+              uri: lb://account-service
+              predicates:
+                - Path=/api/account/**
 
-        - id: accommodation-service
-          uri: lb://accommodation-service
-          predicates:
-            - Path=/api/accommodation/**
+            - id: accommodation-service
+              uri: lb://accommodation-service
+              predicates:
+                - Path=/api/accommodation/**
 
-        - id: booking-service
-          uri: lb://booking-service
-          predicates:
-            - Path=/api/booking/**
+            - id: booking-service
+              uri: lb://booking-service
+              predicates:
+                - Path=/api/booking/**
 
-        - id: payment-service
-          uri: lb://payment-service
-          predicates:
-            - Path=/api/payment/**
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/payment/**
+
+management:
+  endpoint:
+    gateway:
+      access: unrestricted
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+info:
+  app:
+    name: "Gateway Server"
+    description: "Booking Platform Gateway Server"
+    version: "1.0.0"
+
+logging:
+  level:
+    com:
+      pavlomelnyk:
+        gatewayserver: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
 
 eureka:
+  instance:
+    preferIpAddress: true
   client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka/}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: account
+        url: /api/account/v3/api-docs
+      - name: accommodation
+        url: /api/accommodation/v3/api-docs
+      - name: booking
+        url: /api/booking/v3/api-docs
+      - name: payment
+        url: /api/payment/v3/api-docs

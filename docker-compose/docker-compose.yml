@@ -1,0 +1,330 @@
+services:
+  kafka:
+    image: docker.io/bitnami/kafka:latest
+    ports:
+      - "9092:9092"    # для Docker контейнерів
+      - "29092:29092"  # для локального хоста
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: keycloak
+    ports:
+      - "7080:8443"  # Мапимо зовнішній порт 7080 на внутрішній HTTPS порт 8443
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_HTTPS_CERTIFICATE_FILE: "/opt/keycloak/conf/localhost+2.pem"
+      KC_HTTPS_CERTIFICATE_KEY_FILE: "/opt/keycloak/conf/localhost+2-key.pem"
+      KC_HTTP_ENABLED: "true"  # Важливо: включити HTTP
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ~/keycloak-certs/localhost+2.pem:/opt/keycloak/conf/localhost+2.pem:ro
+      - ~/keycloak-certs/localhost+2-key.pem:/opt/keycloak/conf/localhost+2-key.pem:ro
+      - ./keycloak_data:/opt/keycloak/data/h2
+    command: "start-dev"
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
+  accomodationsdb:
+    container_name: accomodationsdb
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: accommodationsdb
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  accountsdb:
+    container_name: accountsdb
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: accountsdb
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  bookingsdb:
+    container_name: bookingsdb
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: bookingsdb
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  paymentsdb:
+    container_name: paymentsdb
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: paymentsdb
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  configserver:
+    image: "pavlomelnyk10/bp-configserver:latest"
+    container_name: configserver
+    ports:
+      - "8071:8071"
+    healthcheck:
+      test: "curl --fail --silent localhost:8071/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  eurekaserver:
+    image: "pavlomelnyk10/bp-eureka-server:latest"
+    container_name: eurekaserver
+    ports:
+      - "8070:8070"
+    depends_on:
+      configserver:
+        condition: service_healthy
+    healthcheck:
+      test: "curl --fail --silent localhost:8070/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    extends:
+      file: common-config.yml
+      service: microservice-configserver-config
+    environment:
+      SPRING_APPLICATION_NAME: "eurekaserver"
+
+  notification-service:
+    image: "pavlomelnyk10/bp-notification-service:latest"
+    container_name: notification-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
+  # ============================================================================
+  # DOWNSTREAM SERVICES - Internal only, no Keycloak config needed
+  # NOTE: Port mappings commented out for production security.
+  # Uncomment for local debugging only.
+  # ============================================================================
+
+  accommodation-service:
+    image: "pavlomelnyk10/bp-accommodation-service:latest"
+    container_name: accommodation-service
+    # ports:
+    #   - "8083:8083"  # Uncomment for local debugging only
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://accomodationsdb:5432/accommodationsdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - CONFIG_SERVER_URL=http://configserver:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # No Keycloak config - authentication handled by Gateway headers
+    depends_on:
+      accomodationsdb:
+        condition: service_started
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  account-service:
+    image: "pavlomelnyk10/bp-account-service:latest"
+    container_name: account-service
+    # ports:
+    #   - "8082:8082"  # Uncomment for local debugging only
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://accountsdb:5432/accountsdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - CONFIG_SERVER_URL=http://configserver:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # No Keycloak config - authentication handled by Gateway headers
+    depends_on:
+      accountsdb:
+        condition: service_started
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  booking-service:
+    image: "pavlomelnyk10/bp-booking-service:latest"
+    container_name: booking-service
+    # ports:
+    #   - "8084:8084"  # Uncomment for local debugging only
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://bookingsdb:5432/bookingsdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - CONFIG_SERVER_URL=http://configserver:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Inter-service URLs (internal network)
+      - ACCOUNT_SERVICE_URL=http://account-service:8082
+      - ACCOMMODATION_SERVICE_URL=http://accommodation-service:8083
+      # No Keycloak config - authentication handled by Gateway headers
+    depends_on:
+      bookingsdb:
+        condition: service_started
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      account-service:
+        condition: service_started
+      accommodation-service:
+        condition: service_started
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  payment-service:
+    image: "pavlomelnyk10/bp-payment-service:latest"
+    container_name: payment-service
+    # ports:
+    #   - "8086:8086"  # Uncomment for local debugging only
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://paymentsdb:5432/paymentsdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - CONFIG_SERVER_URL=http://configserver:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Inter-service URLs (internal network)
+      - ACCOUNT_SERVICE_URL=http://account-service:8082
+      - BOOKING_SERVICE_URL=http://booking-service:8084
+      # Stripe config (should be moved to env secrets in production)
+      - STRIPE_API_SECRET_KEY=sk_test_51QjjxvHIkXlPt6mSbFIfNwrEJCVgyf63jPHhacBd2HRJKKHLpPC2ugZAjoB7x2oRc8z3md3F0ydPkT78jm882lX700milbDerM
+      - STRIPE_API_PUBLIC_KEY=pk_test_51QjjxvHIkXlPt6mSB1nsJRvPgawZjsnSLLxhKHMv9IhSKjVNXaEUwD05xfhQL9CFv8CdoLpcZoiT8TTWmrSWDEbt00wIxi5Eix
+#      secret-key: sk_test_51QjjxvHIkXlPt6mSbFIfNwrEJCVgyf63jPHhacBd2HRJKKHLpPC2ugZAjoB7x2oRc8z3md3F0ydPkT78jm882lX700milbDerM
+#      public-key: pk_test_51QjjxvHIkXlPt6mSB1nsJRvPgawZjsnSLLxhKHMv9IhSKjVNXaEUwD05xfhQL9CFv8CdoLpcZoiT8TTWmrSWDEbt00wIxi5Eix
+      # No Keycloak config - authentication handled by Gateway headers
+    depends_on:
+      paymentsdb:
+        condition: service_started
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      account-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  # ============================================================================
+  # API GATEWAY - Single entry point, handles JWT validation via Keycloak
+  # ============================================================================
+  api-gateway:
+    image: "pavlomelnyk10/bp-api-gateway:latest"
+    container_name: api-gateway
+    ports:
+      - "8081:8081"  # Only Gateway is exposed externally
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_URL=http://configserver:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      # Keycloak config - ONLY Gateway talks to Keycloak
+      - KEYCLOAK_ISSUER_URI=https://localhost:7080/realms/booking-platform
+      - KEYCLOAK_AUTH_URI=https://localhost:7080/realms/booking-platform/protocol/openid-connect/auth
+      - KEYCLOAK_TOKEN_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/token
+      - KEYCLOAK_USER_INFO_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/userinfo
+      - KEYCLOAK_JWK_SET_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/certs
+      - KEYCLOAK_CLIENT_SECRET=COsjqIJAg8FEqNmagcOBPhTKiaRYHkbe
+      # Explicitly override Spring Security OAuth2 Client config to bypass Config Server and ensure correctness
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_PROVIDER=keycloak
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID=booking-platform-client
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET=COsjqIJAg8FEqNmagcOBPhTKiaRYHkbe
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE=authorization_code
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE=openid
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI={baseUrl}/login/oauth2/code/{registrationId}
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_AUTHORIZATION_URI=https://localhost:7080/realms/booking-platform/protocol/openid-connect/auth
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/token
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_INFO_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/userinfo
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_JWK_SET_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/certs
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE=preferred_username
+      # Ensure Issuer URI is NOT set for the provider to avoid discovery mismatch (it's only needed for Resource Server JWT validation)
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=https://localhost:7080/realms/booking-platform
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/booking-platform/protocol/openid-connect/certs
+    volumes:
+      - ~/keycloak-certs/localhost+2.pem:/etc/ssl/certs/keycloak.pem:ro
+    extends:
+      file: common-config.yml
+      service: microservice-eureka-config
+    depends_on:
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+      accommodation-service:
+        condition: service_started
+      account-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+
+
+networks:
+  pavlomelnyk:
+    driver: "bridge"
+
+volumes:
+  kafka_data:
+    driver: local

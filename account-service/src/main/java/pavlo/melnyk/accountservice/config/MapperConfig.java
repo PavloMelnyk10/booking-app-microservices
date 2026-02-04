@@ -1,4 +1,4 @@
-package pavlo.melnyk.accountservice.mapper;
+package pavlo.melnyk.accountservice.config;
 
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.NullValueCheckStrategy;
@@ -6,7 +6,9 @@ import org.mapstruct.NullValueCheckStrategy;
 @org.mapstruct.MapperConfig(
         componentModel = "spring",
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
-        nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS
+        nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
+        implementationPackage = "<PACKAGE_NAME>.impl"
 )
-public interface MapperConfig {
+public class MapperConfig {
 }
+

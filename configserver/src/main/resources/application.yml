@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: configserver
+  profiles:
+    active: git
+  cloud:
+    bus:
+      enabled: false
+    config:
+      server:
+        git:
+          uri: https://github.com/PavloMelnyk10/configserver
+          default-label: master
+          timeout: 5
+          clone-on-start: true
+          force-pull: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+encrypt:
+  key: i2qR23dWCuFpc3JSV4FzP8Dhp/HHYTgxTZFDhYGvRD0=
+
+server:
+  port: 8071
+
