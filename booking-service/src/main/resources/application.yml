@@ -5,9 +5,9 @@ spring:
   application:
     name: booking-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/bookin_app_ms
+    url: jdbc:postgresql://localhost:5435/bookingsdb
     username: postgres
-    password: 123456
+    password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,13 +15,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/bookingapp
+  config:
+    import: "optional:configserver:http://localhost:8071/"
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -34,12 +31,49 @@ spring:
         spring.json.trusted.packages: "pavlo.melnyk.bookingservice.consumer"
         spring.json.value.default.type: "pavlo.melnyk.bookingservice.consumer.PaymentEvent"
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: "Accommodations"
+    description: "Booking Platform Bookings Service"
+    version: "1.0.0"
+
 eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/
+
+logging:
+  level:
+    com:
+      pavlomelnyk:
+        accounts: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+
 
 account:
   service:

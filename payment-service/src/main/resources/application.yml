@@ -5,9 +5,9 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/booking_app_ms
+    url: jdbc:postgresql://localhost:5436/paymentsdb
     username: postgres
-    password: 123456
+    password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,13 +15,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/bookingapp
+  config:
+    import: "optional:configserver:http://localhost:8071/"
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -34,12 +31,48 @@ spring:
         spring.json.trusted.packages: "pavlo.melnyk.paymentservice.consumer"
         spring.json.value.default.type: "pavlo.melnyk.paymentservice.consumer.PaymentRefundEvent"
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: "Accommodations"
+    description: "Booking Platform Payments Service"
+    version: "1.0.0"
+
 eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/
+
+logging:
+  level:
+    com:
+      pavlomelnyk:
+        accounts: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
 
 account:
   service:
@@ -51,5 +84,5 @@ booking:
 
 stripe:
   api:
-    secret-key: sk_test
-    public-key: pk_test
+    secret-key: sk_test_51QjjxvHIkXlPt6mSbFIfNwrEJCVgyf63jPHhacBd2HRJKKHLpPC2ugZAjoB7x2oRc8z3md3F0ydPkT78jm882lX700milbDerM
+    public-key: pk_test_51QjjxvHIkXlPt6mSB1nsJRvPgawZjsnSLLxhKHMv9IhSKjVNXaEUwD05xfhQL9CFv8CdoLpcZoiT8TTWmrSWDEbt00wIxi5Eix

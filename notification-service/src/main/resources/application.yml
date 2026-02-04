@@ -1,11 +1,11 @@
 server:
-  port: 8085
+  port: 8072
 
 spring:
   application:
     name: notification-service
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     consumer:
       group-id: notification_group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -13,9 +13,9 @@ spring:
 
 telegram:
   bot:
-    token:
+    token: 7569488024:AAH1C6F9ITsDBqY2VZs5CRVnNzdsVZT6y5g
   chat:
-    id:
+    id: -1002399834173
   topics:
     bookings: 17
     payments: 21
